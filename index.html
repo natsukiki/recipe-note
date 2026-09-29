@@ -1,0 +1,872 @@
+<title>レシピノート</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&display=swap">
+<link rel="apple-touch-icon" id="ati" sizes="180x180">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="レシピノート">
+<meta name="theme-color" content="#8b5e3c">
+<style>
+:root{
+  --kraft:#c4956a;--kraft-dark:#8b5e3c;--kraft-deep:#5a3a18;
+  --cream:#f7edd8;--paper:#fdf6e8;
+  --ink:#3a2a1f;--accent:#8b5e3c;--accent-light:#d4a876;
+  --tan:#e8c9a0;
+  --washi-pink:rgba(232,180,170,0.75);--washi-green:rgba(180,210,175,0.75);--washi-blue:rgba(180,200,225,0.75);
+  --hi:#fff176;
+  color-scheme:light;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--kraft-dark);font-family:'Klee One','Hiragino Kaku Gothic ProN',sans-serif;color:var(--ink);overflow:hidden}
+
+#app{height:100%;display:flex;flex-direction:column;max-width:480px;margin:0 auto;background:var(--kraft-dark)}
+
+/* left-binder + pages row */
+#main-row{flex:1;display:flex;overflow:hidden}
+.binder{width:22px;background:var(--kraft-deep);flex-shrink:0;display:flex;flex-direction:column;align-items:center;padding:22px 0;gap:26px}
+.bhole{width:14px;height:14px;background:var(--kraft-dark);border-radius:50%;border:2px solid #3a2008;box-shadow:inset 0 1px 3px rgba(0,0,0,0.4)}
+
+#pages{flex:1;position:relative;overflow:hidden}
+.page{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .18s}
+.page.active{opacity:1;pointer-events:auto}
+
+/* bottom nav */
+#nav{height:58px;background:var(--kraft-deep);display:flex;align-items:stretch;flex-shrink:0;border-top:2px solid #3a2008}
+.nbtn{flex:1;background:none;border:none;color:var(--tan);font-family:inherit;font-size:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;padding:4px;transition:background .15s}
+.nbtn.on{color:#fff}
+.nbtn:active{background:rgba(255,255,255,.1)}
+.nico{width:20px;height:20px}
+
+/* ── TITLE PAGE ── */
+#pg-title{background:var(--kraft);align-items:center;justify-content:center;gap:18px;position:relative}
+.t-bear{width:150px;height:150px}
+.t-plate{background:var(--cream);padding:12px 28px;border-radius:4px;text-align:center;transform:rotate(-1deg);box-shadow:2px 3px 10px rgba(0,0,0,.22)}
+.t-plate h1{font-size:18px;font-weight:600;color:var(--ink)}
+.t-plate p{font-size:11px;color:var(--accent);margin-top:3px}
+.t-deco{position:absolute;opacity:.35;font-size:28px}
+.start-btn{background:var(--accent);color:#fff;border:none;border-radius:24px;padding:12px 36px;font-family:inherit;font-size:16px;cursor:pointer;box-shadow:2px 3px 8px rgba(0,0,0,.2)}
+
+/* ── HOME ── */
+#pg-home{background:var(--cream)}
+.ph{padding:14px 14px 0;display:flex;align-items:center;justify-content:space-between;border-bottom:2px dashed var(--tan);padding-bottom:12px}
+.ph h2{font-size:17px;font-weight:600;color:var(--accent)}
+.add-btn{background:var(--accent);color:#fff;border:none;border-radius:18px;padding:7px 14px;font-family:inherit;font-size:12px;cursor:pointer}
+#recipe-list{padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.rcard{background:var(--paper);border-radius:8px;padding:11px;display:flex;gap:10px;cursor:pointer;box-shadow:2px 2px 6px rgba(0,0,0,.07);border-left:4px solid var(--tan);transition:transform .12s}
+.rcard:active{transform:scale(.98)}
+.rthumb{width:68px;height:68px;object-fit:cover;border-radius:4px;border:3px solid #fff;box-shadow:1px 1px 4px rgba(0,0,0,.1);flex-shrink:0;background:var(--tan);display:flex;align-items:center;justify-content:center}
+.rthumb svg{width:36px;height:36px;opacity:.5}
+.rinfo{flex:1;min-width:0}
+.rname{font-size:14px;font-weight:600;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ring{font-size:10px;color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rstars{display:flex;gap:1px;margin-top:3px}
+.s{font-size:11px;color:var(--accent-light)}.s.dim{opacity:.3}
+.rdate{font-size:9px;color:var(--accent);margin-top:2px}
+.empty{padding:40px 14px;display:flex;flex-direction:column;align-items:center;gap:10px;color:var(--accent);opacity:.6;font-size:13px;text-align:center}
+
+/* ── RECIPE DETAIL ── */
+#pg-recipe{background:var(--cream)}
+.rhdr{background:var(--washi-pink);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px dashed var(--accent-light);flex-shrink:0}
+.rhdr h3{font-size:14px;font-weight:600;color:var(--accent)}
+.back{background:none;border:none;font-size:22px;color:var(--accent);cursor:pointer;line-height:1;padding:0}
+.rinner{padding:14px;display:flex;flex-direction:column;gap:14px}
+.washi-ttl{display:inline-block;background:var(--washi-pink);padding:5px 20px;font-size:17px;font-weight:600;color:var(--ink);transform:rotate(-.5deg);border-radius:2px}
+.polaroid{background:#fff;padding:7px 7px 22px;box-shadow:2px 3px 8px rgba(0,0,0,.16);transform:rotate(2deg);width:120px;flex-shrink:0}
+.polaroid img{width:100%;height:106px;object-fit:cover;display:block}
+.plab{font-size:8px;text-align:center;color:var(--accent);margin-top:5px;font-style:italic}
+.sec-hdr{font-size:13px;font-weight:600;color:var(--accent);border-bottom:2px dotted var(--tan);padding-bottom:3px;margin-bottom:8px}
+.ing-list{display:flex;flex-direction:column;gap:5px}
+.ing-row{display:flex;gap:6px;align-items:center;font-size:13px}
+.ing-dot{width:7px;height:7px;border:2px solid var(--accent);border-radius:50%;flex-shrink:0}
+.ing-nm{flex:1}
+.ing-am{color:var(--accent);font-size:12px}
+.steps-list{display:flex;flex-direction:column;gap:8px}
+.step{display:flex;gap:8px;padding:8px 10px;border-radius:6px;background:var(--paper);transition:background .2s}
+.step.hi{background:var(--hi)}
+.snum{width:22px;height:22px;background:var(--accent);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0}
+.stxt{flex:1;font-size:13px;line-height:1.6;padding-top:2px}
+.sacts{display:flex;flex-direction:column;gap:3px;flex-shrink:0}
+.sbtn{background:none;border:1px solid var(--tan);border-radius:4px;padding:2px 6px;font-size:10px;color:var(--accent);cursor:pointer;font-family:inherit;white-space:nowrap}
+.sbtn.hi-on{background:var(--hi);border-color:#ddd}
+.memo-box{background:var(--paper);border-radius:6px;padding:10px;font-size:13px;line-height:1.6;border-left:3px solid var(--washi-green)}
+.action-row{display:flex;gap:8px}
+.cook-btn{flex:1;background:var(--accent);color:#fff;border:none;border-radius:20px;padding:12px;font-family:inherit;font-size:13px;cursor:pointer}
+.del-btn{background:none;border:1.5px solid #c08080;color:#c08080;border-radius:20px;padding:12px 14px;font-family:inherit;font-size:13px;cursor:pointer}
+.del-btn.confirming{background:#c08080;color:#fff}
+.confirm-row{display:flex;gap:8px;align-items:center;background:#fdf0f0;border-radius:8px;padding:8px 10px;font-size:12px;color:#c08080}
+.confirm-row button{padding:5px 12px;border:none;border-radius:12px;font-family:inherit;font-size:12px;cursor:pointer}
+.confirm-yes{background:#c08080;color:#fff}
+.confirm-no{background:var(--tan);color:var(--ink)}
+
+/* ── NEW RECIPE ── */
+#pg-new{background:var(--cream)}
+.nhdr{background:var(--washi-green);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px dashed var(--accent-light);flex-shrink:0}
+.nhdr h3{font-size:14px;font-weight:600;color:var(--accent)}
+.nform{padding:14px;display:flex;flex-direction:column;gap:14px}
+.flbl{font-size:11px;font-weight:600;color:var(--accent);display:block;margin-bottom:4px}
+.finp{width:100%;padding:8px 11px;border:1.5px solid var(--tan);border-radius:6px;font-family:inherit;font-size:13px;background:var(--paper);color:var(--ink);outline:none}
+.finp:focus{border-color:var(--accent)}
+.fta{width:100%;padding:8px 11px;border:1.5px solid var(--tan);border-radius:6px;font-family:inherit;font-size:13px;background:var(--paper);color:var(--ink);outline:none;resize:none;min-height:70px}
+.fta:focus{border-color:var(--accent)}
+.diff-row{display:flex;gap:6px}
+.dbtn{flex:1;padding:7px 4px;border:1.5px solid var(--tan);border-radius:6px;background:var(--paper);font-family:inherit;font-size:11px;color:var(--accent);cursor:pointer;text-align:center}
+.dbtn.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.ing-flist{display:flex;flex-direction:column;gap:6px}
+.ifrow{display:flex;gap:5px;align-items:center}
+.ifrow .finp:nth-child(1){flex:2}
+.ifrow .finp:nth-child(2){flex:1}
+.rm-btn{background:none;border:none;color:#c08080;font-size:18px;cursor:pointer;padding:0 2px;line-height:1;flex-shrink:0}
+.add-row-btn{background:none;border:1.5px dashed var(--tan);border-radius:6px;padding:7px;width:100%;font-family:inherit;font-size:12px;color:var(--accent);cursor:pointer;margin-top:3px}
+.step-flist{display:flex;flex-direction:column;gap:6px}
+.sfrow{display:flex;gap:6px;align-items:flex-start}
+.sfnum{width:22px;height:22px;background:var(--accent);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;margin-top:9px}
+.sfrow textarea{flex:1;padding:8px 10px;border:1.5px solid var(--tan);border-radius:6px;font-family:inherit;font-size:12px;background:var(--paper);color:var(--ink);outline:none;resize:none;min-height:58px}
+.sfrow textarea:focus{border-color:var(--accent)}
+.save-btn{background:var(--accent);color:#fff;border:none;border-radius:20px;padding:14px;width:100%;font-family:inherit;font-size:14px;cursor:pointer;box-shadow:2px 3px 6px rgba(0,0,0,.15)}
+.gen-btn{background:none;border:1.5px solid var(--accent);border-radius:6px;padding:8px 12px;font-family:inherit;font-size:12px;color:var(--accent);cursor:pointer;width:100%;margin-top:5px}
+.gen-prev{width:100%;height:110px;object-fit:cover;border-radius:6px;display:none;margin-top:7px;border:3px solid #fff;box-shadow:1px 2px 6px rgba(0,0,0,.12)}
+.gen-prev.vis{display:block}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── SEARCH ── */
+#pg-search{background:var(--cream)}
+.shdr{padding:12px 14px;background:var(--washi-blue);border-bottom:1px dashed var(--accent-light);flex-shrink:0}
+.shdr h2{font-size:16px;font-weight:600;color:var(--accent)}
+.scont{padding:12px 14px;display:flex;flex-direction:column;gap:10px;flex:1;overflow-y:auto}
+.stoggle{display:flex;border:1.5px solid var(--tan);border-radius:8px;overflow:hidden}
+.stbtn{flex:1;padding:8px;border:none;background:var(--paper);font-family:inherit;font-size:12px;color:var(--accent);cursor:pointer}
+.stbtn.on{background:var(--accent);color:#fff}
+.sresults{display:flex;flex-direction:column;gap:8px}
+
+/* ── AI CHAT ── */
+#pg-ai{background:var(--cream);display:flex;flex-direction:column}
+.aihdr{padding:12px 14px;background:var(--washi-pink);border-bottom:1px dashed var(--accent-light);text-align:center;flex-shrink:0}
+.aihdr h3{font-size:15px;font-weight:600;color:var(--accent)}
+.aihdr p{font-size:11px;color:var(--accent);opacity:.8;margin-top:2px}
+.quick-row{padding:8px 14px;display:flex;gap:7px;border-bottom:1px dashed var(--tan);flex-shrink:0;flex-wrap:wrap}
+.qbtn{background:var(--paper);border:1.5px solid var(--tan);border-radius:14px;padding:6px 11px;font-family:inherit;font-size:11px;color:var(--accent);cursor:pointer}
+.qbtn:active{background:var(--tan)}
+.chat-msgs{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 14px;display:flex;flex-direction:column;gap:9px}
+.bubble{max-width:84%;padding:10px 13px;border-radius:16px;font-size:13px;line-height:1.6}
+.bubble.u{align-self:flex-end;background:var(--accent);color:#fff;border-bottom-right-radius:4px}
+.bubble.a{align-self:flex-start;background:var(--paper);color:var(--ink);border:1px solid var(--tan);border-bottom-left-radius:4px}
+.bubble.a::before{content:'くまっぴ ';font-size:9px;color:var(--accent);display:block;margin-bottom:3px;font-weight:600}
+.chat-in{padding:9px 14px;padding-bottom:max(9px,env(safe-area-inset-bottom));display:flex;gap:7px;border-top:1px solid var(--tan);background:var(--cream);flex-shrink:0}
+.cinp{flex:1;padding:8px 12px;border:1.5px solid var(--tan);border-radius:18px;font-family:inherit;font-size:13px;background:var(--paper);color:var(--ink);outline:none}
+.csend{background:var(--accent);color:#fff;border:none;border-radius:50%;width:34px;height:34px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* ── COOKING MODE ── */
+#cooking{position:fixed;inset:0;background:var(--kraft);display:flex;flex-direction:column;z-index:100;display:none}
+#cooking.vis{display:flex}
+.ck-hdr{background:var(--kraft-deep);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;color:var(--cream)}
+.ck-hdr h3{font-size:14px}
+.ck-close{background:none;border:none;color:var(--cream);font-size:22px;cursor:pointer;line-height:1}
+.ck-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 20px;gap:16px}
+.ck-snum{font-size:12px;color:var(--accent-light);letter-spacing:.08em}
+.ck-stxt{font-size:19px;line-height:1.75;text-align:center;color:var(--cream);background:rgba(255,255,255,.1);border-radius:14px;padding:22px;width:100%}
+.ck-timer-btn{background:var(--accent);color:#fff;border:none;border-radius:18px;padding:10px 22px;font-family:inherit;font-size:13px;cursor:pointer}
+.ck-nav{display:flex;gap:12px;padding:18px;justify-content:center}
+.ck-btn{background:var(--accent);color:#fff;border:none;border-radius:12px;padding:13px 26px;font-family:inherit;font-size:14px;cursor:pointer}
+.ck-btn:disabled{opacity:.35}
+
+/* ── TIMER ── */
+#timer{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;z-index:200;display:none}
+#timer.vis{display:flex}
+.tsheet{background:var(--cream);width:100%;border-radius:18px 18px 0 0;padding:22px 20px;padding-bottom:max(22px,env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:14px}
+.tdisp{font-size:54px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:.04em}
+.tdisp.done{color:#c04040}
+.tmin-row{display:flex;gap:7px;align-items:center}
+.tmin{width:72px;padding:7px;border:1.5px solid var(--tan);border-radius:8px;font-family:inherit;font-size:18px;text-align:center;background:var(--paper);color:var(--ink);outline:none}
+.tbtn-row{display:flex;gap:10px}
+.tbtn{padding:11px 22px;border:none;border-radius:10px;font-family:inherit;font-size:13px;cursor:pointer}
+.tstart{background:var(--accent);color:#fff}
+.treset{background:var(--paper);color:var(--accent);border:1.5px solid var(--tan)}
+.tclose{background:none;border:none;color:var(--accent);font-family:inherit;font-size:13px;cursor:pointer;align-self:flex-start}
+
+/* Toast */
+.toast{position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;padding:9px 18px;border-radius:18px;font-size:13px;z-index:999;font-family:inherit;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.2);animation:fadeup .2s ease}
+@keyframes fadeup{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+</style>
+
+<div id="app">
+  <div id="main-row">
+    <!-- LEFT BINDER -->
+    <div class="binder">
+      <div class="bhole"></div><div class="bhole"></div><div class="bhole"></div>
+      <div class="bhole"></div><div class="bhole"></div><div class="bhole"></div>
+      <div class="bhole"></div><div class="bhole"></div>
+    </div>
+
+    <div id="pages">
+
+      <!-- TITLE -->
+      <div class="page active" id="pg-title">
+        <svg class="t-bear" viewBox="0 0 100 100" fill="none">
+          <ellipse cx="50" cy="68" rx="26" ry="22" fill="#c8a882"/>
+          <circle cx="50" cy="42" r="21" fill="#c8a882"/>
+          <circle cx="32" cy="24" r="9" fill="#c8a882"/>
+          <circle cx="32" cy="24" r="5" fill="#e8c9a0"/>
+          <circle cx="68" cy="24" r="9" fill="#c8a882"/>
+          <circle cx="68" cy="24" r="5" fill="#e8c9a0"/>
+          <ellipse cx="50" cy="68" rx="15" ry="13" fill="#e8c9a0"/>
+          <circle cx="44" cy="38" r="3" fill="#3a2a1f"/>
+          <circle cx="56" cy="38" r="3" fill="#3a2a1f"/>
+          <circle cx="45" cy="37" r="1" fill="white"/>
+          <circle cx="57" cy="37" r="1" fill="white"/>
+          <ellipse cx="50" cy="46" rx="4" ry="3" fill="#8b5e3c"/>
+          <path d="M46 49 Q50 53 54 49" stroke="#3a2a1f" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          <circle cx="38" cy="46" r="5" fill="#e8a0a0" opacity=".45"/>
+          <circle cx="62" cy="46" r="5" fill="#e8a0a0" opacity=".45"/>
+          <ellipse cx="42" cy="62" rx="4" ry="3" fill="#b89070"/>
+          <ellipse cx="58" cy="62" rx="4" ry="3" fill="#b89070"/>
+          <ellipse cx="50" cy="75" rx="8" ry="4" fill="#b89070"/>
+        </svg>
+        <div class="t-plate">
+          <h1>レシピノート</h1>
+          <p>大切なレシピをここに</p>
+        </div>
+        <button class="start-btn" onclick="go('home')">ノートをひらく</button>
+      </div>
+
+      <!-- HOME -->
+      <div class="page" id="pg-home">
+        <div class="ph">
+          <h2>レシピ一覧</h2>
+          <button class="add-btn" onclick="go('new')">+ 新しいレシピ</button>
+        </div>
+        <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch">
+          <div id="recipe-list"></div>
+        </div>
+      </div>
+
+      <!-- RECIPE DETAIL -->
+      <div class="page" id="pg-recipe">
+        <div class="rhdr">
+          <button class="back" onclick="go('home')">←</button>
+          <h3 id="rd-title"></h3>
+          <div style="width:28px"></div>
+        </div>
+        <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch">
+          <div class="rinner" id="rd-body"></div>
+        </div>
+      </div>
+
+      <!-- NEW RECIPE -->
+      <div class="page" id="pg-new">
+        <div class="nhdr">
+          <button class="back" onclick="go('home')" style="color:var(--accent)">←</button>
+          <h3>新しいレシピ</h3>
+          <div style="width:28px"></div>
+        </div>
+        <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch">
+          <div class="nform">
+            <div>
+              <label class="flbl">お菓子の名前</label>
+              <input class="finp" id="fn" type="text" placeholder="例：くまさんクッキー">
+            </div>
+            <div>
+              <label class="flbl">難易度</label>
+              <div class="diff-row" id="drow">
+                <button class="dbtn on" data-d="1" onclick="setD(1)">★ かんたん</button>
+                <button class="dbtn" data-d="2" onclick="setD(2)">★★ ふつう</button>
+                <button class="dbtn" data-d="3" onclick="setD(3)">★★★ むずかしい</button>
+              </div>
+            </div>
+            <div>
+              <label class="flbl">材料</label>
+              <div class="ing-flist" id="iflist"></div>
+              <button class="add-row-btn" onclick="addIng()">+ 材料を追加</button>
+            </div>
+            <div>
+              <label class="flbl">手順</label>
+              <div class="step-flist" id="sflist"></div>
+              <button class="add-row-btn" onclick="addStep()">+ 手順を追加</button>
+            </div>
+            <div>
+              <label class="flbl">メモ</label>
+              <textarea class="fta" id="fmemo" placeholder="コツや気づきなど..."></textarea>
+            </div>
+            <div>
+              <label class="flbl">レシピ画像（AI生成）</label>
+              <button class="gen-btn" id="genbtn" onclick="genImg()">AI で画像を生成する</button>
+              <img id="gprev" class="gen-prev" alt="AI生成画像">
+              <input type="hidden" id="fimgurl">
+            </div>
+            <button class="save-btn" onclick="saveRec()">レシピを保存する</button>
+            <div style="height:16px"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SEARCH -->
+      <div class="page" id="pg-search">
+        <div class="shdr"><h2>レシピをさがす</h2></div>
+        <div class="scont">
+          <div class="stoggle">
+            <button class="stbtn on" id="stb-n" onclick="setSM('name')">レシピ名で</button>
+            <button class="stbtn" id="stb-i" onclick="setSM('ing')">材料で</button>
+          </div>
+          <input class="finp" id="sinp" type="text" placeholder="キーワードを入力..." oninput="doSearch()">
+          <div class="sresults" id="sresults"></div>
+        </div>
+      </div>
+
+      <!-- AI CHAT -->
+      <div class="page" id="pg-ai">
+        <div class="aihdr">
+          <h3>くまっぴに相談する</h3>
+          <p>材料の代替 · 手持ち材料でレシピ提案</p>
+        </div>
+        <div class="quick-row">
+          <button class="qbtn" onclick="prefill('バターの代わりに使える材料を教えて')">材料の代替は？</button>
+          <button class="qbtn" onclick="prefill('小麦粉とバターと砂糖だけで作れるお菓子は？')">何が作れる？</button>
+        </div>
+        <div class="chat-msgs" id="chatbox">
+          <div class="bubble a">こんにちは！くまっぴだよ。材料の代替や、持ってる材料で作れるお菓子を教えるよ。何でも聞いてね！</div>
+        </div>
+        <div class="chat-in">
+          <input class="cinp" id="cinp" type="text" placeholder="材料について相談する..." onkeydown="if(event.key==='Enter')sendChat()">
+          <button class="csend" onclick="sendChat()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+      </div>
+
+    </div><!-- #pages -->
+  </div><!-- #main-row -->
+
+  <!-- NAV -->
+  <nav id="nav">
+    <button class="nbtn on" id="n-home" onclick="go('home')">
+      <svg class="nico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      <span>ノート</span>
+    </button>
+    <button class="nbtn" id="n-search" onclick="go('search')">
+      <svg class="nico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span>さがす</span>
+    </button>
+    <button class="nbtn" id="n-new" onclick="go('new')">
+      <svg class="nico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span>新規</span>
+    </button>
+    <button class="nbtn" id="n-ai" onclick="go('ai')">
+      <svg class="nico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M9 8 Q8 5 9.5 3.5"/><path d="M15 8 Q16 5 14.5 3.5"/><path d="M8 20 Q8 14 12 14 Q16 14 16 20"/></svg>
+      <span>相談</span>
+    </button>
+  </nav>
+</div>
+
+<!-- COOKING MODE -->
+<div id="cooking">
+  <div class="ck-hdr">
+    <button class="ck-close" onclick="closeCook()">✕</button>
+    <h3 id="ck-name"></h3>
+    <span id="ck-prog" style="font-size:12px;opacity:.8"></span>
+  </div>
+  <div class="ck-body">
+    <div class="ck-snum" id="ck-snum"></div>
+    <div class="ck-stxt" id="ck-stxt"></div>
+    <button class="ck-timer-btn" onclick="openTimer(5)">タイマーをセット</button>
+  </div>
+  <div class="ck-nav">
+    <button class="ck-btn" id="ck-prev" onclick="ckPrev()">← 前へ</button>
+    <button class="ck-btn" id="ck-next" onclick="ckNext()">次へ →</button>
+  </div>
+</div>
+
+<!-- TIMER -->
+<div id="timer">
+  <div class="tsheet">
+    <button class="tclose" onclick="closeTimer()">✕ 閉じる</button>
+    <div class="tmin-row">
+      <input class="tmin" id="tmin" type="number" min="1" max="99" value="5">
+      <span style="font-size:16px;color:var(--accent)">分</span>
+    </div>
+    <div class="tdisp" id="tdisp">05:00</div>
+    <div class="tbtn-row">
+      <button class="tbtn tstart" id="tsb" onclick="tStart()">スタート</button>
+      <button class="tbtn treset" onclick="tReset()">リセット</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DATA ──
+let recipes=[], curId=null, selD=1, sm='name';
+let ckSteps=[], ckIdx=0;
+let tSec=0, tRunning=false, tIv=null;
+
+// Inline SVG food illustrations (always work, no external loading needed)
+const SVG_COOKIE=`<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="40" cy="40" r="34" fill="#d4a87a"/><circle cx="40" cy="40" r="34" fill="url(#cg)" opacity=".4"/><defs><radialGradient id="cg" cx="35%" cy="35%"><stop offset="0%" stop-color="#f0cc90"/><stop offset="100%" stop-color="#b07840"/></radialGradient></defs><circle cx="28" cy="32" r="5.5" fill="#7a4820"/><circle cx="52" cy="27" r="4.5" fill="#7a4820"/><circle cx="44" cy="50" r="5" fill="#7a4820"/><circle cx="24" cy="50" r="3.5" fill="#7a4820"/><circle cx="56" cy="46" r="4" fill="#7a4820"/><circle cx="36" cy="20" r="3" fill="#7a4820"/><circle cx="42" cy="38" r="12" fill="#e8c9a0" opacity=".55"/><circle cx="38" cy="35" r="2.5" fill="#5a3010"/><circle cx="46" cy="35" r="2.5" fill="#5a3010"/><path d="M38 41 Q42 45 46 41" stroke="#5a3010" stroke-width="1.5" fill="none" stroke-linecap="round"/><circle cx="34" cy="40" r="4" fill="#e8a0a0" opacity=".4"/><circle cx="50" cy="40" r="4" fill="#e8a0a0" opacity=".4"/></svg>`;
+
+const SVG_PANCAKE=`<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg"><ellipse cx="40" cy="64" rx="32" ry="9" fill="#c8903a"/><ellipse cx="40" cy="55" rx="30" ry="8.5" fill="#daa84a"/><ellipse cx="40" cy="46" rx="27" ry="8" fill="#ecc068"/><ellipse cx="40" cy="38" rx="24" ry="7.5" fill="#f4d080"/><rect x="32" y="28" width="16" height="8" rx="4" fill="#fffacc" opacity=".9"/><path d="M48 34 Q54 46 50 58" stroke="#b07820" stroke-width="3" fill="none" stroke-linecap="round" opacity=".7"/><path d="M44 35 Q48 44 46 54" stroke="#b07820" stroke-width="2" fill="none" stroke-linecap="round" opacity=".5"/></svg>`;
+
+const SVG_CAKE=`<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="12" y="45" width="56" height="28" rx="4" fill="#d4a0c0"/><rect x="18" y="30" width="44" height="18" rx="3" fill="#e8b8d0"/><rect x="24" y="18" width="32" height="14" rx="3" fill="#f4d0e0"/><ellipse cx="40" cy="18" rx="16" ry="5" fill="#fff8f0"/><line x1="40" y1="8" x2="40" y2="18" stroke="#e87070" stroke-width="2" stroke-linecap="round"/><circle cx="40" cy="7" r="3" fill="#ffaa44" opacity=".9"/><circle cx="22" cy="44" r="6" fill="#fff" opacity=".6"/><circle cx="40" cy="44" r="6" fill="#fff" opacity=".6"/><circle cx="58" cy="44" r="6" fill="#fff" opacity=".6"/></svg>`;
+
+const SVG_CHOCO=`<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="20" width="64" height="44" rx="6" fill="#5a3010"/><line x1="29.3" y1="20" x2="29.3" y2="64" stroke="#7a5030" stroke-width="2"/><line x1="50.7" y1="20" x2="50.7" y2="64" stroke="#7a5030" stroke-width="2"/><line x1="8" y1="35.3" x2="72" y2="35.3" stroke="#7a5030" stroke-width="2"/><line x1="8" y1="50.7" x2="72" y2="50.7" stroke="#7a5030" stroke-width="2"/><rect x="10" y="22" width="17" height="11" rx="2" fill="#7a5030" opacity=".5"/></svg>`;
+
+function foodSvg(name){
+  const n=name||'';
+  if(/パン|pancake/i.test(n))return SVG_PANCAKE;
+  if(/クッキー|cookie|ビスケット/i.test(n))return SVG_COOKIE;
+  if(/ケーキ|cake|タルト|マフィン/i.test(n))return SVG_CAKE;
+  if(/チョコ|choco|ブラウニー/i.test(n))return SVG_CHOCO;
+  return SVG_COOKIE;
+}
+
+const SAMPLES=[
+  {id:'s1',name:'くまさんオートミールクッキー',difficulty:2,
+   ingredients:[{n:'オートミール',a:'100g'},{n:'薄力粉',a:'100g'},{n:'ベーキングパウダー',a:'小さじ1'},{n:'卵',a:'1個'},{n:'砂糖',a:'80g'},{n:'溶かしバター',a:'80g'},{n:'チョコペン（黒）',a:'1本'},{n:'チョコペン（白）',a:'1本'}],
+   steps:[
+     {t:'ボウルに卵と砂糖を入れて、砂糖がとけるまでよく混ぜる',hi:false},
+     {t:'薄力粉をふるい入れ、オートミールを加えてゴムベラでさっくり混ぜる',hi:false},
+     {t:'天板にくまの形に成型して、160℃のオーブンで20分焼く',hi:false,timer:20},
+     {t:'チョコペンで顔を書いたら完成！器に盛りつけてできあがり',hi:false}
+   ],
+   memo:'砂糖をブラウンシュガーにするとよりコクが出る！',
+   img:null,date:'2026-09-01'},
+  {id:'s2',name:'ふわふわパンケーキ',difficulty:1,
+   ingredients:[{n:'薄力粉',a:'100g'},{n:'砂糖',a:'大さじ2'},{n:'牛乳',a:'100ml'},{n:'卵',a:'1個'},{n:'塩',a:'少々'},{n:'ベーキングパウダー',a:'小さじ1'}],
+   steps:[
+     {t:'卵・砂糖・塩をボウルに入れてよく混ぜる',hi:false},
+     {t:'牛乳を加えてさらに混ぜ、薄力粉とBPをふるい入れてさっくり混ぜる',hi:false},
+     {t:'フライパンを中火で温め、生地を流して両面焼く（各2〜3分）',hi:false,timer:3},
+     {t:'メープルシロップとバターをのせてできあがり',hi:false}
+   ],
+   memo:'生地を混ぜすぎないのがふわふわのコツ！',
+   img:null,date:'2026-09-10'}
+];
+
+// ── INIT ──
+function init(){
+  try{const s=localStorage.getItem('kp_recs');if(s)recipes=JSON.parse(s);}catch(e){}
+  if(!recipes.length){recipes=[...SAMPLES];save();}
+  initForms();
+  showPage('title');
+  document.getElementById('nav').style.display='none';
+}
+
+function save(){try{localStorage.setItem('kp_recs',JSON.stringify(recipes));}catch(e){}}
+
+// ── NAV ──
+function go(pg){
+  if(pg==='home')renderList();
+  if(pg==='new')resetForm();
+  if(pg==='search'){renderSearch('');document.getElementById('sinp').value='';}
+  showPage(pg);
+  const nav=document.getElementById('nav');
+  nav.style.display=pg==='title'?'none':'flex';
+  ['home','search','new','ai'].forEach(k=>{
+    document.getElementById('n-'+k).classList.toggle('on',k===pg);
+  });
+}
+
+function showPage(pg){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  const el=document.getElementById('pg-'+pg);
+  if(el)el.classList.add('active');
+}
+
+// ── LIST ──
+function renderList(){
+  const c=document.getElementById('recipe-list');
+  if(!recipes.length){
+    c.innerHTML=`<div class="empty"><svg width="60" height="60" viewBox="0 0 100 100" fill="none"><circle cx="50" cy="42" r="21" fill="#c8a882" opacity=".5"/><circle cx="32" cy="24" r="9" fill="#c8a882" opacity=".5"/><circle cx="68" cy="24" r="9" fill="#c8a882" opacity=".5"/><circle cx="44" cy="38" r="3" fill="#8b5e3c" opacity=".5"/><circle cx="56" cy="38" r="3" fill="#8b5e3c" opacity=".5"/><path d="M46 49 Q50 53 54 49" stroke="#8b5e3c" stroke-width="1.5" fill="none" stroke-linecap="round" opacity=".5"/></svg><p>レシピがまだないよ</p><p style="font-size:11px">「+新しいレシピ」から追加してね</p></div>`;
+    return;
+  }
+  c.innerHTML=recipes.map(r=>`
+    <div class="rcard" onclick="openRec('${r.id}')">
+      ${r.img
+        ? `<img class="rthumb" src="${r.img}" alt="" onerror="imgErr(this)" loading="lazy">`
+        : `<div class="rthumb">${foodSvg(r.name)}</div>`
+      }
+      <div class="rinfo">
+        <div class="rname">${esc(r.name)}</div>
+        <div class="ring">${r.ingredients.slice(0,3).map(i=>i.n).join('・')}${r.ingredients.length>3?'…':''}</div>
+        <div class="rstars">${[1,2,3].map(s=>`<span class="s${s>r.difficulty?' dim':''}" >★</span>`).join('')}</div>
+        <div class="rdate">${r.date}</div>
+      </div>
+    </div>`).join('');
+}
+
+function bearSvgSmall(){
+  return `<svg viewBox="0 0 100 100" fill="none"><circle cx="50" cy="42" r="21" fill="#c8a882"/><circle cx="32" cy="24" r="9" fill="#c8a882"/><circle cx="68" cy="24" r="9" fill="#c8a882"/><circle cx="44" cy="38" r="3" fill="#3a2a1f"/><circle cx="56" cy="38" r="3" fill="#3a2a1f"/><path d="M46 49 Q50 53 54 49" stroke="#3a2a1f" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>`;
+}
+
+// ── DETAIL ──
+function openRec(id){
+  curId=id;
+  const r=recipes.find(r=>r.id===id);
+  if(!r)return;
+  document.getElementById('rd-title').textContent=r.name;
+  document.getElementById('rd-body').innerHTML=`
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+      <div>
+        <div class="washi-ttl">${esc(r.name)}</div>
+        <div class="rstars" style="margin-top:8px">${[1,2,3].map(s=>`<span class="s${s>r.difficulty?' dim':''}">★</span>`).join('')}
+          <span style="font-size:10px;color:var(--accent);margin-left:5px">${['','かんたん','ふつう','むずかしい'][r.difficulty]}</span>
+        </div>
+      </div>
+      <div class="polaroid">
+        ${r.img
+          ? `<img src="${r.img}" alt="${esc(r.name)}" onerror="polaroidErr(this)">`
+          : `<div style="width:100%;height:106px;display:flex;align-items:center;justify-content:center;">${foodSvg(r.name)}</div>`
+        }
+        <div class="plab">${esc(r.name)}</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="sec-hdr">· ingredients · 材料 ·</div>
+      <div class="ing-list">${r.ingredients.map(i=>`
+        <div class="ing-row">
+          <div class="ing-dot"></div>
+          <span class="ing-nm">${esc(i.n)}</span>
+          <span class="ing-am">${esc(i.a)}</span>
+        </div>`).join('')}
+      </div>
+    </div>
+
+    <div>
+      <div class="sec-hdr">· instructions · 手順 ·</div>
+      <div class="steps-list">${r.steps.map((s,i)=>`
+        <div class="step" id="st${i}">
+          <div class="snum">${i+1}</div>
+          <div class="stxt">${esc(s.t)}</div>
+          ${s.timer?`<div class="sacts"><button class="sbtn" onclick="openTimer(${s.timer})">⏱ ${s.timer}分</button></div>`:''}
+        </div>`).join('')}
+      </div>
+    </div>
+
+    ${r.memo?`<div><div class="sec-hdr">· メモ ·</div><div class="memo-box">${esc(r.memo)}</div></div>`:''}
+
+    <div class="action-row">
+      <button class="cook-btn" onclick="startCook('${id}')">クッキングモード</button>
+      <button class="del-btn" id="delbtn" onclick="delStep1()">削除</button>
+    </div>
+    <div id="del-confirm" style="display:none" class="confirm-row">
+      <span style="flex:1">本当に削除する？</span>
+      <button class="confirm-no" onclick="document.getElementById('del-confirm').style.display='none'">いいえ</button>
+      <button class="confirm-yes" onclick="delRec('${id}')">削除する</button>
+    </div>
+  `;
+  showPage('recipe');
+  document.getElementById('nav').style.display='flex';
+  document.querySelectorAll('.nbtn').forEach(b=>b.classList.remove('on'));
+}
+
+function delStep1(){document.getElementById('del-confirm').style.display='flex';}
+function delRec(id){
+  recipes=recipes.filter(r=>r.id!==id);
+  save();
+  go('home');
+  toast('レシピを削除したよ');
+}
+
+
+// ── NEW RECIPE FORM ──
+function resetForm(){
+  document.getElementById('fn').value='';
+  document.getElementById('fmemo').value='';
+  document.getElementById('fimgurl').value='';
+  document.getElementById('gprev').classList.remove('vis');
+  document.getElementById('genbtn').textContent='AI で画像を生成する';
+  document.getElementById('genbtn').disabled=false;
+  selD=1;updD();
+  document.getElementById('iflist').innerHTML='';
+  document.getElementById('sflist').innerHTML='';
+  addIng();addIng();addIng();
+  addStep();
+}
+
+function initForms(){
+  document.getElementById('iflist').innerHTML='';
+  document.getElementById('sflist').innerHTML='';
+  addIng();addIng();addIng();addStep();
+}
+
+function addIng(){
+  const l=document.getElementById('iflist');
+  const d=document.createElement('div');
+  d.className='ifrow';
+  d.innerHTML=`<input class="finp" type="text" placeholder="材料名" style="flex:2"><input class="finp" type="text" placeholder="分量" style="flex:1"><button class="rm-btn" onclick="this.parentElement.remove()">×</button>`;
+  l.appendChild(d);
+}
+
+function addStep(){
+  const l=document.getElementById('sflist');
+  const n=l.children.length+1;
+  const d=document.createElement('div');
+  d.className='sfrow';
+  d.innerHTML=`<div class="sfnum">${n}</div><textarea placeholder="手順 ${n}..."></textarea><button class="rm-btn" style="margin-top:9px" onclick="rmStep(this)">×</button>`;
+  l.appendChild(d);
+}
+
+function rmStep(btn){
+  btn.parentElement.remove();
+  document.querySelectorAll('#sflist .sfnum').forEach((el,i)=>el.textContent=i+1);
+}
+
+function setD(d){selD=d;updD();}
+function updD(){document.querySelectorAll('#drow .dbtn').forEach(b=>b.classList.toggle('on',+b.dataset.d===selD));}
+
+function genImg(){
+  const name=document.getElementById('fn').value.trim();
+  if(!name){toast('まずお菓子の名前を入力してね');return;}
+  const btn=document.getElementById('genbtn');
+  btn.innerHTML='<span class="spin"></span> 生成中…';
+  btn.disabled=true;
+  const p=encodeURIComponent(`${name} japanese kawaii sweets dessert food photography pastel soft natural light flat lay cute`);
+  const url=`https://image.pollinations.ai/prompt/${p}?width=400&height=400&nologo=true&seed=${Date.now()}`;
+
+  // Try fetch first (to get blob URL which bypasses img-src CSP limits)
+  fetch(url)
+    .then(r=>{if(!r.ok)throw new Error();return r.blob();})
+    .then(blob=>{
+      const blobUrl=URL.createObjectURL(blob);
+      const pv=document.getElementById('gprev');
+      pv.src=blobUrl;pv.classList.add('vis');
+      // Store original URL for persistence
+      document.getElementById('fimgurl').value=url;
+      btn.textContent='もう一度生成する';btn.disabled=false;
+    })
+    .catch(()=>{
+      // fetch blocked; try direct img load
+      const img=new Image();
+      img.crossOrigin='anonymous';
+      img.onload=()=>{
+        const pv=document.getElementById('gprev');
+        pv.src=url;pv.classList.add('vis');
+        document.getElementById('fimgurl').value=url;
+        btn.textContent='もう一度生成する';btn.disabled=false;
+      };
+      img.onerror=()=>{
+        btn.textContent='AI で画像を生成する';btn.disabled=false;
+        // Show URL so user can open manually
+        toast('画像URLをコピーしてね（外部ブラウザで確認できるよ）');
+        document.getElementById('fimgurl').value=url;
+        btn.textContent='もう一度生成する';btn.disabled=false;
+      };
+      img.src=url;
+    });
+}
+
+function saveRec(){
+  const name=document.getElementById('fn').value.trim();
+  if(!name){toast('お菓子の名前を入力してね');return;}
+  const ings=[...document.querySelectorAll('#iflist .ifrow')].map(row=>{
+    const inp=row.querySelectorAll('input');
+    return{n:inp[0].value.trim(),a:inp[1].value.trim()};
+  }).filter(i=>i.n);
+  const steps=[...document.querySelectorAll('#sflist textarea')].map(ta=>({t:ta.value.trim(),hi:false})).filter(s=>s.t);
+  const r={
+    id:'r'+Date.now(),name,difficulty:selD,ingredients:ings,steps,
+    memo:document.getElementById('fmemo').value.trim(),
+    img:document.getElementById('fimgurl').value,
+    date:new Date().toISOString().slice(0,10)
+  };
+  recipes.unshift(r);save();
+  go('home');
+  toast('レシピを保存したよ！');
+}
+
+// ── SEARCH ──
+function setSM(m){
+  sm=m;
+  document.getElementById('stb-n').classList.toggle('on',m==='name');
+  document.getElementById('stb-i').classList.toggle('on',m==='ing');
+  doSearch();
+}
+
+function doSearch(){
+  const q=document.getElementById('sinp').value.trim().toLowerCase();
+  renderSearch(q);
+}
+
+function renderSearch(q){
+  const c=document.getElementById('sresults');
+  const res=q?recipes.filter(r=>sm==='name'?r.name.toLowerCase().includes(q):r.ingredients.some(i=>i.n.toLowerCase().includes(q))):recipes;
+  if(!res.length){
+    c.innerHTML=`<div style="text-align:center;color:var(--accent);opacity:.55;padding:24px;font-size:13px">${q?'見つからなかったよ…':'キーワードを入力してね'}</div>`;
+    return;
+  }
+  c.innerHTML=res.map(r=>`
+    <div class="rcard" onclick="openRec('${r.id}')">
+      ${r.img
+        ? `<img class="rthumb" src="${r.img}" alt="" onerror="imgErr(this)" loading="lazy">`
+        : `<div class="rthumb">${foodSvg(r.name)}</div>`
+      }
+      <div class="rinfo">
+        <div class="rname">${esc(r.name)}</div>
+        <div class="ring">${r.ingredients.slice(0,3).map(i=>i.n).join('・')}</div>
+        <div class="rstars">${[1,2,3].map(s=>`<span class="s${s>r.difficulty?' dim':''}">★</span>`).join('')}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ── AI CHAT ──
+async function sendChat(){
+  const inp=document.getElementById('cinp');
+  const msg=inp.value.trim();if(!msg)return;
+  inp.value='';
+  addBubble(msg,'u');
+  const bbl=addBubble('考えてるよ…','a');
+  try{
+    const sys='あなたはお菓子作りが大好きな可愛いくまキャラクター「くまっぴ」です。材料の代替や、ある材料で作れるお菓子レシピを日本語でやさしく教えてください。「〜だよ」「〜だね」などかわいい口調で話してください。長くなりすぎずコンパクトに答えてね。';
+    const full=encodeURIComponent(sys+'\n\nユーザー: '+msg);
+    const res=await fetch(`https://text.pollinations.ai/${full}`);
+    bbl.textContent=await res.text()||'うまく答えられなかったよ…';
+  }catch(e){bbl.textContent='ごめんね、今つながれなかったよ。もう一度試してみてね！';}
+  const c=document.getElementById('chatbox');c.scrollTop=c.scrollHeight;
+}
+
+function addBubble(txt,role){
+  const c=document.getElementById('chatbox');
+  const d=document.createElement('div');
+  d.className=`bubble ${role}`;
+  d.textContent=txt;
+  c.appendChild(d);
+  c.scrollTop=c.scrollHeight;
+  return d;
+}
+
+function prefill(msg){document.getElementById('cinp').value=msg;}
+
+// ── COOKING MODE ──
+function startCook(id){
+  const r=recipes.find(r=>r.id===id);
+  if(!r||!r.steps.length)return;
+  ckSteps=r.steps;ckIdx=0;
+  document.getElementById('ck-name').textContent=r.name;
+  updCook();
+  document.getElementById('cooking').classList.add('vis');
+}
+
+function updCook(){
+  const s=ckSteps[ckIdx];
+  document.getElementById('ck-snum').textContent=`STEP ${ckIdx+1}`;
+  document.getElementById('ck-stxt').textContent=s.t;
+  document.getElementById('ck-prog').textContent=`${ckIdx+1} / ${ckSteps.length}`;
+  document.getElementById('ck-prev').disabled=ckIdx===0;
+  document.getElementById('ck-next').textContent=ckIdx===ckSteps.length-1?'完成！':'次へ →';
+}
+
+function ckPrev(){if(ckIdx>0){ckIdx--;updCook();}}
+function ckNext(){
+  if(ckIdx<ckSteps.length-1){ckIdx++;updCook();}
+  else{closeCook();toast('おつかれさまでした！完成したよ');}
+}
+function closeCook(){document.getElementById('cooking').classList.remove('vis');}
+
+// ── TIMER ──
+function openTimer(min=5){
+  tReset();
+  document.getElementById('tmin').value=min;
+  tSec=min*60;updTDisp();
+  document.getElementById('timer').classList.add('vis');
+}
+function closeTimer(){clearInterval(tIv);tRunning=false;document.getElementById('timer').classList.remove('vis');}
+function tStart(){
+  if(tRunning){clearInterval(tIv);tRunning=false;document.getElementById('tsb').textContent='スタート';return;}
+  if(tSec===0){tSec=(parseInt(document.getElementById('tmin').value)||5)*60;}
+  tRunning=true;document.getElementById('tsb').textContent='一時停止';
+  tIv=setInterval(()=>{
+    tSec--;updTDisp();
+    if(tSec<=0){
+      clearInterval(tIv);tRunning=false;
+      document.getElementById('tsb').textContent='スタート';
+      document.getElementById('tdisp').classList.add('done');
+      tBeep();
+    }
+  },1000);
+}
+function tReset(){
+  clearInterval(tIv);tRunning=false;
+  document.getElementById('tsb').textContent='スタート';
+  const m=parseInt(document.getElementById('tmin').value)||5;
+  tSec=m*60;document.getElementById('tdisp').className='tdisp';updTDisp();
+}
+function updTDisp(){
+  const m=String(Math.floor(tSec/60)).padStart(2,'0');
+  const s=String(tSec%60).padStart(2,'0');
+  document.getElementById('tdisp').textContent=`${m}:${s}`;
+}
+function tBeep(){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    [0,.35,.7].forEach(t=>{
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.connect(g);g.connect(ctx.destination);
+      o.frequency.value=880;
+      g.gain.setValueAtTime(.3,ctx.currentTime+t);
+      g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+t+.28);
+      o.start(ctx.currentTime+t);o.stop(ctx.currentTime+t+.28);
+    });
+  }catch(e){}
+}
+
+// ── UTILS ──
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+function imgErr(el){
+  const div=document.createElement('div');
+  div.className=el.className;
+  const r=recipes.find(r=>r.id===curId)||{name:''};
+  div.innerHTML=foodSvg(r.name||'');
+  if(el.parentNode)el.parentNode.replaceChild(div,el);
+}
+
+function polaroidErr(el){
+  const r=recipes.find(r=>r.id===curId)||{name:''};
+  const div=document.createElement('div');
+  div.style.cssText='width:100%;height:106px;display:flex;align-items:center;justify-content:center;';
+  div.innerHTML=foodSvg(r.name||'');
+  if(el.parentNode)el.parentNode.replaceChild(div,el);
+}
+function toast(msg){
+  const el=document.createElement('div');el.className='toast';el.textContent=msg;
+  document.body.appendChild(el);setTimeout(()=>el.remove(),2500);
+}
+
+init();
+
+// Generate bear icon for PWA / favicon
+(function(){
+  try{
+    const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+      <rect width="100" height="100" rx="22" fill="#c4956a"/>
+      <ellipse cx="50" cy="68" rx="26" ry="22" fill="#c8a882"/>
+      <circle cx="50" cy="42" r="21" fill="#c8a882"/>
+      <circle cx="32" cy="24" r="9" fill="#c8a882"/>
+      <circle cx="32" cy="24" r="5" fill="#e8c9a0"/>
+      <circle cx="68" cy="24" r="9" fill="#c8a882"/>
+      <circle cx="68" cy="24" r="5" fill="#e8c9a0"/>
+      <ellipse cx="50" cy="68" rx="15" ry="13" fill="#e8c9a0"/>
+      <circle cx="44" cy="38" r="3" fill="#3a2a1f"/>
+      <circle cx="56" cy="38" r="3" fill="#3a2a1f"/>
+      <circle cx="45" cy="37" r="1" fill="white"/>
+      <circle cx="57" cy="37" r="1" fill="white"/>
+      <ellipse cx="50" cy="46" rx="4" ry="3" fill="#8b5e3c"/>
+      <path d="M46 49 Q50 53 54 49" stroke="#3a2a1f" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <circle cx="38" cy="46" r="5" fill="#e8a0a0" opacity=".5"/>
+      <circle cx="62" cy="46" r="5" fill="#e8a0a0" opacity=".5"/>
+    </svg>`;
+    const blob=new Blob([svg],{type:'image/svg+xml'});
+    const url=URL.createObjectURL(blob);
+    const img=new Image();
+    img.onload=()=>{
+      const c=document.createElement('canvas');
+      c.width=c.height=180;
+      const ctx=c.getContext('2d');
+      ctx.drawImage(img,0,0,180,180);
+      const png=c.toDataURL('image/png');
+      document.getElementById('ati').href=png;
+      // Also set favicon
+      const fav=document.createElement('link');
+      fav.rel='icon';fav.type='image/png';fav.href=png;
+      document.head.appendChild(fav);
+      URL.revokeObjectURL(url);
+    };
+    img.src=url;
+  }catch(e){}
+})();
+</script>
